@@ -1,0 +1,63 @@
+// monitor-service — data model
+// docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Result of a single health check.
+enum CheckResult {
+  UP
+  DOWN
+}
+
+/// A target endpoint we keep an eye on.
+model Monitor {
+  id              String   @id @default(cuid())
+  name            String
+  url             String
+  method          String   @default("GET")
+  /// HTTP status code we consider healthy.
+  expectedStatus  Int      @default(200)
+  /// How often to probe it, in seconds.
+  intervalSeconds Int      @default(300)
+  enabled         Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  checks    Check[]
+  incidents Incident[]
+
+  @@index([enabled])
+}
+
+/// One probe result for a monitor (time series).
+model Check {
+  id             String      @id @default(cuid())
+  monitorId      String
+  monitor        Monitor     @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  result         CheckResult
+  statusCode     Int?
+  responseTimeMs Int?
+  error          String?
+  checkedAt      DateTime    @default(now())
+
+  @@index([monitorId, checkedAt])
+}
+
+/// A down period: opened when a monitor starts failing, closed when it recovers.
+model Incident {
+  id         String    @id @default(cuid())
+  monitorId  String
+  monitor    Monitor   @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  startedAt  DateTime  @default(now())
+  resolvedAt DateTime?
+  lastError  String?
+
+  @@index([monitorId, startedAt])
+}

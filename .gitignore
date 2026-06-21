@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# build output
+/dist
+/build
+
+# prisma (classic generator emits into node_modules; guard custom output too)
+/generated
+
+# environment
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# test coverage
+/coverage
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea
+*.swp
