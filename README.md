@@ -41,20 +41,38 @@ npm run start:dev
 
 ## API (so far)
 
-| Method | Path            | Description      |
-| ------ | --------------- | ---------------- |
-| POST   | `/monitors`     | Create a monitor |
-| GET    | `/monitors`     | List monitors    |
-| GET    | `/monitors/:id` | Get one monitor  |
-| PATCH  | `/monitors/:id` | Update a monitor |
-| DELETE | `/monitors/:id` | Delete a monitor |
+| Method | Path                  | Description                                  |
+| ------ | --------------------- | -------------------------------------------- |
+| GET    | `/status`             | Aggregated live status (feeds the dashboard) |
+| POST   | `/monitors`           | Create a monitor                             |
+| GET    | `/monitors`           | List monitors                                |
+| GET    | `/monitors/:id`       | Get one monitor                              |
+| PATCH  | `/monitors/:id`       | Update a monitor                             |
+| DELETE | `/monitors/:id`       | Delete a monitor                             |
+| POST   | `/monitors/:id/check` | Probe one monitor now                        |
+| GET    | `/monitors/:id/checks`| Recent check history                         |
+| POST   | `/checks/run`         | Probe all enabled monitors now               |
+
+## Dashboard
+
+A React (Vite + Recharts) status page lives in [`dashboard/`](./dashboard). It
+consumes `GET /status` and shows each monitor's status, a latency sparkline, 24h
+uptime % and last-checked time, auto-refreshing every 15s.
+
+```bash
+cd dashboard
+npm install
+npm run dev   # http://localhost:5173 (expects the API at http://localhost:3000)
+```
 
 ## Roadmap
 
 - [x] Scaffold + data model + Monitors CRUD + Swagger
-- [ ] Checker + scheduler (probe enabled monitors on their interval)
-- [ ] Incidents (open/close on transitions) + uptime stats
+- [x] Checker + scheduler (probe enabled monitors on their interval)
+- [x] Incidents (open/close on transitions) + 24h uptime stats
+- [x] `/status` aggregate endpoint
+- [x] React dashboard (live status board)
 - [ ] Telegram alerts on down/recovery
-- [ ] `/status` aggregate endpoint for the portfolio board
 - [ ] Tests
-- [ ] Dockerfile + deploy (Fly.io) + React dashboard
+- [ ] Dockerfile + deploy (API on Fly.io, dashboard on Vercel)
+- [ ] Wire the portfolio's status board to real `/status` data
