@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { MonitorsModule } from './monitors/monitors.module';
+import { ChecksModule } from './checks/checks.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { MonitorsModule } from './monitors/monitors.module';
     ScheduleModule.forRoot(),
     PrismaModule,
     MonitorsModule,
+    ChecksModule,
   ],
   controllers: [AppController],
   providers: [AppService],
