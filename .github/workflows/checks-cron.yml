@@ -1,0 +1,24 @@
+name: checks-cron
+
+# Drives the monitoring cadence for free: every 10 minutes it pings the API's
+# /checks/run, which also wakes the (scaled-to-zero) Fly machine. Set the repo
+# variable API_URL to the deployed API base URL (Settings → Secrets and
+# variables → Actions → Variables).
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger checks
+        run: |
+          if [ -z "${{ vars.API_URL }}" ]; then
+            echo "API_URL repo variable not set — skipping."
+            exit 0
+          fi
+          curl -fsS -X POST "${{ vars.API_URL }}/checks/run" -o /dev/null \
+            && echo "Triggered checks at ${{ vars.API_URL }}" \
+            || echo "Ping failed (API may be waking up)."
