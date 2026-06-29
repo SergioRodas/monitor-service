@@ -1,0 +1,14 @@
+# Render Blueprint — monitor-service API (free web service, Docker).
+# Import at https://render.com → New → Blueprint, pointing at this repo.
+services:
+  - type: web
+    name: monitor-service
+    runtime: docker
+    plan: free
+    region: virginia # closest free region to the Neon DB (São Paulo)
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        sync: false # set this in the Render dashboard (it's a secret)

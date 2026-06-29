@@ -1,59 +1,59 @@
 # Deploy
 
-Everything here runs on free tiers. Target setup:
+Everything here runs on **free tiers, no credit card, no expiry**:
 
-- **API** → Fly.io (Dockerized NestJS, scales to zero when idle)
+- **API** → Render (free web service, Docker; sleeps when idle, woken by the cron)
 - **Database** → Neon Postgres (already provisioned)
 - **Dashboard** → Vercel (static Vite build)
 - **Cadence** → a GitHub Actions cron pings the API every 10 min (also wakes the
-  scaled-to-zero machine)
+  sleeping Render instance)
 
-## 1. API on Fly.io
+## 1. API on Render
 
-Prerequisites: a [Fly.io](https://fly.io) account and the `flyctl` CLI.
+[render.com](https://render.com) → sign up (GitHub login works, no card needed).
+
+**Option A — Blueprint (uses `render.yaml`):**
+- New → **Blueprint** → pick this repo → Apply.
+- Add the env var when prompted: `DATABASE_URL` = your Neon connection string.
+
+**Option B — manual:**
+- New → **Web Service** → connect this repo.
+- Runtime **Docker**, Instance type **Free**, Health check path `/`.
+- Environment → add `DATABASE_URL` = your Neon string.
+- Create.
+
+Render builds the Docker image, runs `prisma migrate deploy` on boot, and serves
+at `https://<service>.onrender.com` (Swagger at `/docs`). The app honors Render's
+injected `PORT` automatically.
+
+Seed the monitors once against production (from your machine):
 
 ```bash
-# install flyctl (Windows PowerShell)
-iwr https://fly.io/install.ps1 -useb | iex
-
-# from monitor-service/
-fly auth login
-fly launch --no-deploy        # accept the existing fly.toml; pick a unique app name & region (gru)
-
-# give it the database (same string as your local .env)
-fly secrets set DATABASE_URL="postgresql://...neon.tech/...?sslmode=require"
-
-fly deploy                     # builds the Docker image, runs `prisma migrate deploy`, goes live
-```
-
-Your API is then at `https://<app-name>.fly.dev` (Swagger at `/docs`).
-Seed the monitors once against production:
-
-```bash
-# point Prisma at the prod DB just for this command
 DATABASE_URL="<neon-url>" npx prisma db seed
 ```
 
+> Free instances sleep after ~15 min idle; the first request then takes ~30–50s
+> to wake. The cron below keeps it warm.
+
 ## 2. Keep checks running (free) — GitHub Actions cron
 
-The workflow at `.github/workflows/checks-cron.yml` pings `/checks/run` every
-10 minutes. Tell it where the API lives:
+`.github/workflows/checks-cron.yml` pings `/checks/run` every 10 minutes. Point it
+at the API:
 
 - GitHub repo → **Settings → Secrets and variables → Actions → Variables → New**
-- Name: `API_URL`  ·  Value: `https://<app-name>.fly.dev`
+- Name `API_URL` · Value `https://<service>.onrender.com`
 
-(You can also run it manually from the Actions tab via "Run workflow".)
+(Also runnable manually from the Actions tab → Run workflow.)
 
 ## 3. Dashboard on Vercel
 
 - Import the repo at [vercel.com/new](https://vercel.com/new).
 - **Root Directory:** `dashboard`
-- **Environment Variable:** `VITE_API_URL = https://<app-name>.fly.dev`
-- Deploy. Vercel auto-detects Vite (build `npm run build`, output `dist`).
+- **Environment Variable:** `VITE_API_URL = https://<service>.onrender.com`
+- Deploy (Vercel auto-detects Vite: build `npm run build`, output `dist`).
 
 ## Notes
 
-- The Fly machine scales to zero when idle, so the first request after a quiet
-  period takes a couple of seconds to wake. The cron + any open dashboard keep it
-  warm enough for fresh data.
-- `fly logs` to tail the API; `fly status` for machine state.
+- Cold start after idle: the very first cron ping or dashboard load may take a
+  few seconds; subsequent ones are instant.
+- Render free gives ~750 instance-hours/month — enough for one service.

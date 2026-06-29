@@ -29,4 +29,5 @@ COPY --from=build /app/dist ./dist
 COPY prisma ./prisma
 COPY package*.json ./
 EXPOSE 3000
-CMD ["node", "dist/main.js"]
+# Apply pending migrations on boot (idempotent), then start the API.
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
