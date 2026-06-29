@@ -25,3 +25,9 @@ dist-ssr
 
 # local screenshots
 .shots/
+
+# stray compiled output that must never sit next to TS sources
+src/**/*.js
+src/**/*.d.ts
+src/**/*.js.map
+*.tsbuildinfo
